@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS&B Custom Level Library</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #3D0018 !important;
+            background-image: none;
+            background-size: unset;
+            background-position: unset;
+            background-repeat: unset;
+            background-attachment: unset;
+        }
+        h1 {
+            background: linear-gradient(90deg, #00ffff, #ff0055);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .audioUnlockBtn {
+            display: none;
+        }
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+        }
+        .info-icon {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+        }
+        .info-text {
+            color: #00ffff;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .emoji-img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        /* 点唱机样式 */
+        .jukebox-wrap {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8;
+        }
+        .jukebox-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            cursor: none;
+            padding: 0;
+        }
+        .jukebox-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .jukebox-panel {
+            display: none;
+            background: #000;
+            border: 2px solid #FF0071;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .jukebox-panel.show {
+            display: block;
+        }
+        .jukebox-input {
+            background: #000;
+            border: 1px solid #FF0071;
+            color: #fff;
+            padding: 6px;
+            width: 220px;
+            margin-bottom: 8px;
+            outline: none;
+        }
+        .jukebox-ctrl {
+            display: flex;
+            gap: 6px;
+        }
+        .jukebox-ctrl button {
+            background: #000;
+            border: 1px solid #FF0071;
+            color: #FF0071;
+            padding: 4px 8px;
+            cursor: none;
+        }
+        /* 场景图：再左移到right:160px，默认透明，卡片open展开才显示 */
+        .stage-img {
+            position: absolute;
+            right: 160px;
+            bottom: 0;
+            width: 96px;
+            height: 96px;
+            object-fit: contain;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        /* 卡片展开时显示场景图 */
+        .level-card.open .stage-img {
+            opacity: 1;
+        }
+        /* tag图层级更高，不会被stage盖住 */
+        .tag-img {
+            position: absolute;
+            right: 14px;
+            bottom: 4px;
+            width: 128px;
+            height: 64px;
+            object-fit: contain;
+            pointer-events: none;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="jukebox-wrap">
+        <button class="jukebox-btn" id="jukeBtn">
+            <img src="assets/jukebox.png" alt="Jukebox">
+        </button>
+        <div class="jukebox-panel" id="jukePanel">
+            <input type="text" class="jukebox-input" id="jukeInput" placeholder="Input level name...">
+            <div class="jukebox-ctrl">
+                <button id="playBtn">Play</button>
+                <button id="stopTrackBtn">Stop Track</button>
+            </div>
+        </div>
+    </div>
+
+    <h1>JSAB Custom Levels Library</h1>
+    <div class="search-filter-wrap">
+        <input id="searchInput" type="text" placeholder="Search Level / Creator..." class="search-box">
+        <input id="yearInput" type="number" placeholder="Base Year" class="year-input">
+        <select id="timeFilter" class="filter-select">
+            <option value="all">All Time</option>
+            <option value="recent">Recent</option>
+            <option value="lastyear">Last Year</option>
+            <option value="old">Old</option>
+        </select>
+    </div>
+    <div class="level-list" id="levelList"></div>
+    <div class="empty-notice" id="emptyNotice">
+        <img src="assets/icon-error.png" onerror="this.src='assets/PlaceHolder.png'" alt="No Result">
+        <p>No Levels Found :(</p>
+    </div>
+    <button class="stop-audio-btn" id="stopAllAudio">Pause Background Music</button>
+    <button class="back-top-btn" id="backTopBtn"></button>
+    <div class="cyan-cursor" id="cyanCursor"></div>
+    <div id="particleContainer"></div>
+    <script src="./database.js"></script>
+    <script>
+        const listWrap = document.getElementById("levelList");
+        const emptyNotice = document.getElementById("emptyNotice");
+        const searchInput = document.getElementById("searchInput");
+        const yearInput = document.getElementById("yearInput");
+        const timeFilter = document.getElementById("timeFilter");
+        const cyanCursor = document.getElementById("cyanCursor");
+        const particleContainer = document.getElementById("particleContainer");
+        const backTopBtn = document.getElementById("backTopBtn");
+        const stopAllAudioBtn = document.getElementById("stopAllAudio");
+        const renderedAuthor = new Set();
+
+        // 全局背景音乐
+        const bgAudio = new Audio("assets/bg.mp3");
+        bgAudio.volume = 0.35;
+        bgAudio.loop = true;
+        let bgPlayed = false;
+        document.addEventListener("click", () => {
+            if (!bgPlayed) {
+                bgAudio.play().catch(e => console.log("Background audio load fail:", e));
+                bgPlayed = true;
+            }
+        }, { once: true });
+        stopAllAudioBtn.addEventListener("click", () => {
+            if (!bgAudio.paused) {
+                bgAudio.pause();
+                stopAllAudio.innerText = "Play Background Music";
+            } else {
+                bgAudio.play();
+                stopAllAudio.innerText = "Pause Background Music";
+            }
+        });
+        backTopBtn.addEventListener("click", () => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+        // Jukebox播放器逻辑
+        const jukeBtn = document.getElementById("jukeBtn");
+        const jukePanel = document.getElementById("jukePanel");
+        const jukeInput = document.getElementById("jukeInput");
+        const playBtn = document.getElementById("playBtn");
+        const stopTrackBtn = document.getElementById("stopTrackBtn");
+        let trackAudio = null;
+        jukeBtn.addEventListener("click", () => jukePanel.classList.toggle("show"));
+        function stopCurrentTrack() {
+            if (trackAudio) {
+                trackAudio.pause();
+                trackAudio.currentTime = 0;
+                trackAudio = null;
+            }
+            if (bgPlayed && bgAudio.paused) {
+                bgAudio.play();
+                stopAllAudio.innerText = "Pause Background Music";
+            }
+        }
+        stopTrackBtn.addEventListener("click", stopCurrentTrack);
+        playBtn.addEventListener("click", () => {
+            const inputName = jukeInput.value.trim().toLowerCase();
+            if (!inputName) {
+                alert("Please input level name!");
+                return;
+            }
+            const targetLevel = levelDatabase.find(item => item.levelName.toLowerCase() === inputName);
+            if (!targetLevel) {
+                alert("Cannot find this level!");
+                return;
+            }
+            if (!targetLevel.music || !targetLevel.soundFile) {
+                alert("This level has no audio file!");
+                return;
+            }
+            stopCurrentTrack();
+            bgAudio.pause();
+            stopAllAudio.innerText = "Play Background Music";
+            trackAudio = new Audio(`jukebox/${targetLevel.soundFile}`);
+            trackAudio.volume = 0.4;
+            trackAudio.play().catch(err => {
+                alert("Audio file missing in jukebox folder!");
+                stopCurrentTrack();
+            });
+            trackAudio.addEventListener("ended", stopCurrentTrack);
+        });
+
+        // 漂浮背景粒子
+        const bgFloatContainer = document.createElement("div");
+        bgFloatContainer.id = "bgFloatContainer";
+        document.body.appendChild(bgFloatContainer);
+        const floatCount = 18;
+        const floats = [];
+        function createBgFloat() {
+            const el = document.createElement("div");
+            el.className = "bg-float";
+            const size = 24 + Math.random() * 28;
+            el.style.width = size + "px";
+            el.style.height = size + "px";
+            el.style.left = Math.random() * 100 + "%";
+            el.style.top = Math.random() * 100 + "%";
+            const duration = 6 + Math.random() * 10;
+            const delay = Math.random() * 5;
+            const xEnd = (Math.random() - 0.5) * 200;
+            const yEnd = (Math.random() - 0.5) * 200;
+            el.style.animationDuration = duration + "s";
+            el.style.animationDelay = delay + "s";
+            el.style.setProperty("--x-end", xEnd + "px");
+            el.style.setProperty("--y-end", yEnd + "px");
+            bgFloatContainer.appendChild(el);
+            floats.push({ el, xEnd, yEnd });
+        }
+        for (let i = 0; i < floatCount; i++) createBgFloat();
+        document.addEventListener("mousedown", () => {
+            cyanCursor.classList.add("shake");
+            setTimeout(() => cyanCursor.classList.remove("shake"), 300);
+            floats.forEach(item => {
+                item.el.classList.add("shake-float");
+                setTimeout(() => item.el.classList.remove("shake-float"), 300);
+            });
+        });
+
+        // 鼠标拖尾粒子
+        let lastX = 0, lastY = 0, tick = false;
+        function createParticle(x, y, dirX, dirY) {
+            const p = document.createElement("div");
+            p.className = "particle";
+            p.style.left = x + "px";
+            p.style.top = y + "px";
+            const spread = 70;
+            const ox = dirX * spread + (Math.random() - 0.5) * 35;
+            const oy = dirY * spread + (Math.random() - 0.5) * 35;
+            p.style.setProperty("--x", ox + "px");
+            p.style.setProperty("--y", oy + "px");
+            particleContainer.appendChild(p);
+            setTimeout(() => p.remove(), 900);
+        }
+        document.addEventListener("mousemove", e => {
+            const cx = e.clientX, cy = e.clientY;
+            cyanCursor.style.left = cx + "px";
+            cyanCursor.style.top = cy + "px";
+            const dx = cx - lastX;
+            const dy = cy - lastY;
+            let dirX = 0, dirY = 0;
+            if (Math.abs(dx) > Math.abs(dy)) dirX = dx > 0 ? -1 : 1;
+            else dirY = dy > 0 ? -1 : 1;
+            if (!tick) {
+                requestAnimationFrame(() => {
+                    createParticle(cx, cy, dirX);
+                    tick = false;
+                });
+                tick = true;
+            }
+            lastX = cx; lastY = cy;
+        });
+
+        function getPublishYear(str) {
+            if (!str) return 0;
+            const m = str.match(/20\d{2}/);
+            return m ? parseInt(m[0]) : 0;
+        }
+
+        function filterData() {
+            const kw = searchInput.value.toLowerCase().trim();
+            const filterVal = timeFilter.value;
+            let baseYear = parseInt(yearInput.value.trim());
+            if (isNaN(baseYear) || baseYear <= 0) baseYear = new Date().getFullYear();
+            return levelDatabase.filter(item => {
+                const nameMatch = item.levelName.toLowerCase().includes(kw);
+                const authMatch = item.devName.toLowerCase().includes(kw);
+                const y = getPublishYear(item.publishYear);
+                let timeOk = true;
+                if (filterVal === "recent") timeOk = y === baseYear;
+                if (filterVal === "lastyear") timeOk = y === baseYear - 1;
+                if (filterVal === "old") timeOk = y <= baseYear - 2;
+                return (nameMatch || authMatch) && timeOk;
+            });
+        }
+
+        // 表情解析函数
+        function parseEmojiText(rawText) {
+            if (!rawText) return "";
+            return rawText.replace(/\[([^\]]+)\]/g, (match, emojiName) => {
+                const emojiSrc = `images/emoji/${emojiName}.png`;
+                return `<img class="emoji-img" src="${emojiSrc}" onerror="this.style.display='none'" alt="${emojiName}">`;
+            });
+        }
+
+        function renderLevels() {
+            listWrap.innerHTML = "";
+            renderedAuthor.clear();
+            const data = filterData();
+            if (data.length === 0) {
+                emptyNotice.style.display = "flex";
+                return;
+            }
+            emptyNotice.style.display = "none";
+
+            data.forEach(level => {
+                const wrap = document.createElement("div");
+                wrap.className = "level-wrap";
+                const card = document.createElement("div");
+                card.className = "level-card";
+                card.style.position = "relative";
+
+                if (level.imgpreview && level.img) {
+                    card.style.backgroundImage = `url("img/${level.img}")`;
+                    card.style.backgroundSize = "cover";
+                    card.style.backgroundPosition = "center";
+                    card.style.backgroundBlendMode = "multiply";
+                }
+                const basePath = `assets/${level.folder}/`;
+                const iconSrc = basePath + level.levelIconFile;
+                const avatarSrc = basePath + level.devAvatarFile;
+                const hasAvatar = !renderedAuthor.has(level.devName);
+                if (hasAvatar) renderedAuthor.add(level.devName);
+                const downIcon = level.downloadUrl ? "icon-download.png" : "icon-download2.png";
+                const vidIcon = level.videoUrl ? "icon-link.png" : "icon-link2.png";
+                const downHref = level.downloadUrl || "javascript:void(0)";
+                const vidHref = level.videoUrl || "javascript:void(0)";
+
+                // Tag标签
+                let tagHtml = "";
+                if (level.tagid !== "none") {
+                    const tagImgSrc = `tags/${level.tagid}.png`;
+                    tagHtml = `<img class="tag-img" src="${tagImgSrc}" onerror="this.src='assets/PlaceHolder.png'" alt="Tag">`;
+                }
+
+                // 介绍文字+表情
+                let infoHtml = "";
+                if (level.info && level.info.trim() !== "") {
+                    const processedInfo = parseEmojiText(level.info);
+                    infoHtml = `
+                    <div class="info-row">
+                        <img class="info-icon" src="assets/icon-info.gif" onerror="this.src='assets/PlaceHolder.png'" alt="Info">
+                        <span class="info-text">${processedInfo}</span>
+                    </div>
+                    `;
+                }
+
+                // 场景图路径 images/stages
+                let stageHtml = "";
+                if (level.stage && level.stage.trim() !== "") {
+                    const stageSrc = `images/stages/${level.stage}`;
+                    stageHtml = `<img class="stage-img" src="${stageSrc}" onerror="this.remove()" alt="Stage">`;
+                }
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <img class="level-icon" src="${iconSrc}" onerror="this.src='assets/PlaceHolder.png'" alt="Level Icon">
+                        <div class="header-text-area">
+                            <span class="level-name">${level.levelName}</span>
+                            <div class="author-line">
+                                Created by ${level.devName}
+                                ${hasAvatar ? `<img class="dev-avatar" src="${avatarSrc}" onerror="this.src='assets/PlaceHolder.png'" alt="Creator Avatar">` : ""}
+                            </div>
+                        </div>
+                        <div class="icon-group">
+                            <a class="download-link" href="${downHref}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">
+                                <img src="assets/${downIcon}" onerror="this.src='assets/PlaceHolder.png'" alt="Download">
+                            </a>
+                            <a class="video-link" href="${vidHref}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">
+                                <img src="assets/${vidIcon}" onerror="this.src='assets/PlaceHolder.png'" alt="Preview Video">
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-expand-info">
+                        ${infoHtml}
+                        <p><strong>Creator:</strong> ${level.devName}</p>
+                        <p><strong>Release Date:</strong> ${level.publishDate}</p>
+                        <p><strong>Composer:</strong> ${level.songComposer}</p>
+                        ${tagHtml}
+                    </div>
+                    ${stageHtml}
+                `;
+                card.onclick = () => card.classList.toggle("open");
+                wrap.appendChild(card);
+                listWrap.appendChild(wrap);
+            });
+        }
+
+        searchInput.addEventListener("input", renderLevels);
+        yearInput.addEventListener("input", renderLevels);
+        timeFilter.addEventListener("change", renderLevels);
+        renderLevels();
+    </script>
+</body>
+</html>

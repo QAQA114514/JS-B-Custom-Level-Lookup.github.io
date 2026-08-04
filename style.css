@@ -1,0 +1,344 @@
+@font-face {
+    font-family: 'Nexa Regular';
+    src: url('Nexa-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Nexa Regular', system-ui, sans-serif;
+    cursor: none !important;
+}
+body {
+    background-color: #21000E;
+    color: #ffffff;
+    padding: 30px 16px;
+    max-width: 800px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+}
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #FF0071;
+}
+.search-filter-wrap {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    align-items: center;
+}
+.search-box {
+    flex: 1;
+    background: #000000;
+    border: 2px solid #FF0071;
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 6px;
+    outline: none;
+    font-size: 15px;
+}
+.search-box::placeholder {
+    color: #aaa;
+}
+.year-input {
+    width: 110px;
+    background: #000;
+    border: 2px solid #FF0071;
+    color: #fff;
+    padding: 10px;
+    border-radius: 6px;
+    outline: none;
+    font-size: 14px;
+}
+.year-input::placeholder {
+    color: #aaa;
+}
+.filter-select {
+    background: #000;
+    border: 2px solid #FF0071;
+    color: #fff;
+    padding: 10px;
+    border-radius: 6px;
+    outline: none;
+}
+.level-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.level-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.outer-audio-btn {
+    background: transparent;
+    border: none;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    transition: transform 0.2s ease;
+}
+.outer-audio-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: filter 0.2s ease;
+}
+.outer-audio-btn:hover {
+    transform: scale(1.15);
+}
+.outer-audio-btn:hover img {
+    filter: drop-shadow(0 0 6px #FF0071);
+}
+.level-card {
+    flex: 1;
+    background: rgba(0,0,0,0.75);
+    border: 2px solid #FF0071;
+    border-radius: 8px;
+    padding: 14px;
+    overflow: hidden;
+    position: relative;
+    transform: scale(1);
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.level-card:hover {
+    transform: scale(1.03);
+    border-color: #ff007166;
+    box-shadow: 0 0 18px #FF007133;
+}
+.level-card:active {
+    transform: scale(0.97);
+    transition-duration: 0.12s;
+}
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    padding-right: 70px;
+}
+.level-icon {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+.header-text-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.level-name {
+    font-size: 17px;
+    font-weight: normal;
+    color: #FF0071;
+}
+.author-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    opacity: 0.85;
+}
+.dev-avatar {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+.icon-group {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    align-items: center;
+}
+.download-link img,
+.video-link img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    transition: 0.2s ease;
+}
+.download-link:hover img,
+.video-link:hover img {
+    filter: drop-shadow(0 0 6px #FF0071);
+}
+/* 标签容器 右侧留白适配128宽度tag */
+.card-expand-info {
+    position: relative;
+    max-height: 0;
+    margin-top: 0;
+    padding-top: 0;
+    padding-right: 140px;
+    border-top: 1px solid #FF007160;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-expand-info p {
+    margin: 6px 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+/* Tag 缩小至128*64，下移4px，原图等比不变形 */
+.tag-img {
+    width: 128px;
+    height: 64px;
+    object-fit: contain;
+    position: absolute;
+    right: 14px;
+    bottom: 4px;
+    pointer-events: none;
+}
+.level-card.open .card-expand-info {
+    max-height: 320px;
+    margin-top: 16px;
+    padding-top: 14px;
+    opacity: 1;
+}
+.empty-notice {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+    gap: 16px;
+}
+.empty-notice img {
+    width: 128px;
+    height: 128px;
+    object-fit: contain;
+}
+.empty-notice p {
+    font-size: 22px;
+    color: #fff;
+}
+.stop-audio-btn {
+    position: fixed;
+    right: 80px;
+    bottom: 24px;
+    background: #000;
+    border: 2px solid #FF0071;
+    color: #FF0071;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    z-index: 9997;
+    transform: scale(1);
+    transition: transform 0.25s cubic-bezier(0.2, 0, 0.2, 1);
+}
+.stop-audio-btn:hover {
+    transform: scale(1.08);
+    background: #FF0071;
+    color: #000;
+}
+.stop-audio-btn:active {
+    transform: scale(0.92);
+}
+.back-top-btn {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    width: 48px;
+    height: 48px;
+    border: none;
+    outline: none;
+    background: transparent;
+    background-image: url("assets/buttomup.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    pointer-events: auto;
+    transform: scale(1);
+    transition: transform 0.25s cubic-bezier(0.2, 0, 0.2, 1);
+    z-index: 9997;
+}
+.back-top-btn:hover { transform: scale(1.18); }
+.back-top-btn:active { transform: scale(0.9); }
+.cyan-cursor {
+    position: fixed;
+    width: 32px;
+    height: 32px;
+    background-image: url("assets/cyan.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    animation: rotateSlow 3s linear infinite;
+    z-index: 9999;
+}
+@keyframes rotateSlow {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@keyframes shake {
+    0%,100% { transform: translate(-50%, -50%) rotate(0deg) translateX(0); }
+    20% { transform: translate(-50%, -50%) translateX(-4px); }
+    40% { transform: translate(-50%, -50%) translateX(4px); }
+    60% { transform: translate(-50%, -50%) translateX(-3px); }
+    80% { transform: translate(-50%, -50%) translateX(3px); }
+}
+.cyan-cursor.shake { animation: rotateSlow 3s linear infinite, shake 0.3s ease-in-out; }
+#particleContainer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+}
+.particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-image: url("assets/lizi.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    transform: translate(-50%, -50%);
+    animation: particleSpread 0.9s ease-out forwards;
+}
+@keyframes particleSpread {
+    0% { opacity: 1; transform: translate(-50%, -50%) translate(0px, 0px) scale(1); }
+    50% { opacity: 0.85; transform: translate(-50%, -50%) translate(calc(var(--x) * 0.45), calc(var(--y) * 0.45)) scale(1.15); }
+    100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--x), var(--y)) scale(0.8); }
+}
+#bgFloatContainer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+.bg-float {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background-image: url("assets/bg.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.35;
+    transform: translate(-50%, -50%);
+    animation: floatAround 8s ease-in-out infinite alternate;
+}
+@keyframes floatAround {
+    0% { transform: translate(-50%, -50%) translate(0px, 0px); }
+    50% { transform: translate(-50%, -50%) translate(calc(var(--x) * 0.5), calc(var(--y) * 0.5)); }
+    100% { transform: translate(-50%, -50%) translate(var(--x), var(--y)); }
+}
+@keyframes shakeFloat {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    20% { transform: translate(-50%, -50%) rotate(-5deg) translateX(-3px); }
+    40% { transform: translate(-50%, -50%) rotate(5deg) translateX(3px); }
+    60% { transform: translate(-50%, -50%) rotate(-4deg) translateX(-2px); }
+    80% { transform: translate(-50%, -50%) rotate(4deg) translateX(2px); }
+}
+.bg-float.shake-float {
+    animation: shakeFloat 0.3s ease-in-out;
+}
