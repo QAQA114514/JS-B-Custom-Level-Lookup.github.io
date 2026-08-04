@@ -1,0 +1,18 @@
+window.levelFolderList = [
+    "Static Symphony"
+    "Ricochet Love"
+    "PARAGON"
+    "One Forgotten Night"
+    "Eternal Eclipse"
+    "Liquid Town"
+    "SIDStorm"
+    "ICE POP"
+    "Shared Buffer Memory"
+    "Genocide"
+    "Camel By Camel"
+    "Freakshow"
+    "Hypersynthetic"
+    "APOCALYPTIC"
+    "Crazy 2"
+    "Next Level"
+];
